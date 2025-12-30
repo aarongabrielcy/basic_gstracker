@@ -6,7 +6,7 @@
 #include "esp_check.h"
 #include <string.h>
 #include "esp_log.h"
-//#include "sim7000.h"
+#include "sim7000.h"
 
 #define TAG "MAIN UART"
 
