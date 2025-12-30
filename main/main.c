@@ -8,9 +8,14 @@
 #include "esp_system.h"
 #include "leds_pwr_manager.h"
 #include "uart_manager.h"
+#include "nvsManager.h"
+
+#include "esp_log.h"
+#include "esp_check.h"
 
 void app_main(void)
 {
+    nvs_init();
     pwr_init();
     uarts_init();
 }
