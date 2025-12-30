@@ -7,14 +7,14 @@
 #include "esp_log.h"
 #define EPSILON 0.0001
 
-static const char *TAG = "UART_MANAGER_2";
+static const char *TAG = "UART_MANAGER_GNSS";
 
 
 #define BUF_SIZE_OTA 1024
-int uartManager_readEvent_2(char *buffer, int max_length, int timeout_ms);
+int uartGnss_readEvent(char *buffer, int max_length, int timeout_ms);
 void uartManager_start_2(void);
 
-void uart_init_2() {
+void uart_gnss_init() {
     uart_config_t uart_config = {
         .baud_rate = 115200,
         .data_bits = UART_DATA_8_BITS,
@@ -28,10 +28,10 @@ void uart_init_2() {
     uartManager_start_2();
 }
 
-static void uart_task_2(void *arg) {
+static void gnss_task_init(void *arg) {
     char response_gnss[1024];
     while (1) {
-        int len = uartManager_readEvent_2(response_gnss, sizeof(response_gnss), 300);
+        int len = uartGnss_readEvent(response_gnss, sizeof(response_gnss), 300);
         if (len > 0) { 
             ESP_LOGI(TAG, "%s", response_gnss);
         }
@@ -39,7 +39,7 @@ static void uart_task_2(void *arg) {
 }
 
 
-int uartManager_readEvent_2(char *buffer, int max_length, int timeout_ms) {
+int uartGnss_readEvent(char *buffer, int max_length, int timeout_ms) {
     int len = uart_read_bytes(UART_NUM_2, (uint8_t *)buffer, max_length - 1, pdMS_TO_TICKS(timeout_ms));
     if (len > 0) {
         buffer[len] = '\0';
@@ -48,5 +48,5 @@ int uartManager_readEvent_2(char *buffer, int max_length, int timeout_ms) {
 }
 
 void uartManager_start_2() {
-    xTaskCreate(uart_task_2, "uart_task", 8192, NULL, 5, NULL);
+    xTaskCreate(gnss_task_init, "uart_task", 8192, NULL, 5, NULL);
 }

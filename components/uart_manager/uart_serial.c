@@ -12,17 +12,17 @@
 //#include "output.h"
 //#include "accel.h"
 
-#define TAG "MONITOR"
+#define TAG "UART_MANAGER_SERIAL"
 #define BUF_SIZE 1024
 
 TaskHandle_t monitor_uart_task = NULL;
 
-void monitor_task_init(void);
-void monitor_uart_init(void);
+void serial_task_init(void);
+void uart_serial_init(void);
 void uartManager_sendCommand(const char *command);
 static void serialConsole_task(void *pvParameters);
 
-void monitor_uart_init(){
+void uart_serial_init(){
     uart_config_t uart_config = {
         .baud_rate = 115200,
         .data_bits = UART_DATA_8_BITS,
@@ -34,7 +34,7 @@ void monitor_uart_init(){
     uart_param_config(UART_NUM_0, &uart_config);
     uart_driver_install(UART_NUM_0, BUF_SIZE * 2, BUF_SIZE * 2, 0, NULL, 0);
 
-    monitor_task_init();
+    serial_task_init();
 }
 
 static void serialConsole_task(void *pvParameters){
@@ -91,7 +91,7 @@ void uartManager_sendCommand(const char *command) {
     uart_write_bytes(UART_SIM, buf, n);
 }
 
-void monitor_task_init(){
+void serial_task_init(){
     xTaskCreate(serialConsole_task, "serial_console_task", 8192, NULL, 5, &monitor_uart_task);
 }
 

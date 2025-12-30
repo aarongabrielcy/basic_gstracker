@@ -4,7 +4,7 @@
 #include "uart_sim.h"
 
 void uarts_init(){
-    main_uart_init();
-    monitor_uart_init();
-    uart_init_2();
+    uart_sim_init();
+    uart_serial_init();
+    uart_gnss_init();
 }

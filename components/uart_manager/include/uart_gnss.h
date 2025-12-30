@@ -1,3 +1,3 @@
 #pragma once
 
-void uart_init_2(void);
+void uart_gnss_init(void);
