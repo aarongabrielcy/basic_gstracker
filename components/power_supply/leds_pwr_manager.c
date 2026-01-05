@@ -3,6 +3,7 @@
 #include "driver/gpio.h"
 #include "config.h"
 #include "esp_log.h"
+#include "io_manager.h"
 #define TAG "PWR"
 
 void pwr_init(void);
@@ -15,6 +16,8 @@ void pwr_init(){
     power_on_module();
     power_on_led();
     power_gnss_led();
+    input_init();
+    ou_init();
 }
 
 // private

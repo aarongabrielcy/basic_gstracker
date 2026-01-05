@@ -1,3 +1,3 @@
-idf_component_register(SRCS "leds_pwr_manager.c"
+idf_component_register(SRCS "io_manager.c" "leds_pwr_manager.c"
                     INCLUDE_DIRS "include"
-                    REQUIRES driver config)
+                    REQUIRES driver config common)

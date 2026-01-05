@@ -20,7 +20,12 @@ typedef enum {
     DEFAULT
 } system_event_t;
 
+esp_event_loop_handle_t init_event_loop(void);
 esp_event_loop_handle_t get_event_loop(void);
+
+#define TRACKING_REPORT_TIME 10000 //30000
+#define KEEPALIVE_REPORT_TIME 10000//1200000
+
 /*void set_keep_alive_interval(uint32_t interval_ms);*/
 void start_keep_alive_timer(void);
 void stop_keep_alive_timer(void);

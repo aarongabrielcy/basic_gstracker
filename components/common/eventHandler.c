@@ -3,15 +3,16 @@
 #include "freertos/task.h"
 #include "esp_timer.h"
 #include "esp_log.h"
+#include "tracking.h"
 
 ESP_EVENT_DEFINE_BASE(SYSTEM_EVENTS);
 
 static esp_event_loop_handle_t event_loop_handle = NULL;
 static esp_timer_handle_t keep_alive_timer = NULL;
-static uint32_t keep_alive_interval = 1200000; // 20 minutos por defecto / 10 minutos: 600000
+static uint32_t keep_alive_interval = KEEPALIVE_REPORT_TIME; // 20 minutos por defecto / 10 minutos: 600000
 
 static esp_timer_handle_t tracking_report_timer = NULL;
-static uint32_t tracking_report_interval = 30000; //volver dinamico 30000 = 30 seg.  1000 = 1 seg.
+static uint32_t tracking_report_interval = TRACKING_REPORT_TIME; //volver dinamico 30000 = 30 seg.  1000 = 1 seg.
 
 static void keep_alive_callback(void *arg) {
     uint32_t keep_alive_data = keep_alive_interval;
@@ -22,8 +23,7 @@ static void tracking_report_callback(void *arg) {
     esp_event_post_to(get_event_loop(), SYSTEM_EVENTS, TRACKING_RPT, &tracking_report_data, sizeof(uint32_t), portMAX_DELAY);
 }
 
-esp_event_loop_handle_t get_event_loop(void) {
-    //static bool initialized = false;
+esp_event_loop_handle_t init_event_loop(void) {
 
     if (!event_loop_handle) {
         ESP_LOGW("EVENT_HANDLER", "Event loop no inicializado. Creando...");
@@ -41,19 +41,17 @@ esp_event_loop_handle_t get_event_loop(void) {
             ESP_LOGE("EVENT_HANDLER", "Error creando event loop: %s", esp_err_to_name(err));
             return NULL;
         }
-        
-        //initialized = true;
-    }   
+        start_event_handler();
+    }
+       
     return event_loop_handle;
 }
 
-/*void set_keep_alive_interval(uint32_t interval_ms) {
-    keep_alive_interval = interval_ms;
-    if (keep_alive_timer) {
-        esp_timer_stop(keep_alive_timer);
-        esp_timer_start_periodic(keep_alive_timer, keep_alive_interval * 1000);
-    }
-}*/
+esp_event_loop_handle_t get_event_loop(){
+    return event_loop_handle;
+}
+
+// Timers
 void start_tracking_report_timer(void) {
     if (tracking_report_timer != NULL) {
         ESP_LOGW("EVENT_HANDLER", "tracking_report ya está en ejecución");
@@ -75,7 +73,6 @@ void start_tracking_report_timer(void) {
 void stop_tracking_report_timer(void) {
     if (tracking_report_timer != NULL) {
         esp_timer_stop(tracking_report_timer);
-        //esp_timer_delete(tracking_report_timer);
         tracking_report_timer = NULL;
         ESP_LOGI("EVENT_HANDLER", "tracking_report_timer detenido y eliminado");
     }
@@ -104,7 +101,6 @@ void start_keep_alive_timer(void) {
 void stop_keep_alive_timer(void) {
     if (keep_alive_timer != NULL) {
         esp_timer_stop(keep_alive_timer);
-        //esp_timer_delete(keep_alive_timer);
         keep_alive_timer = NULL;
         ESP_LOGI("EVENT_HANDLER", "keep_alive_timer detenido y eliminado");
     }

@@ -7,6 +7,7 @@
 #include <string.h>
 #include "esp_log.h"
 #include "sim7000.h"
+#include "tracking.h"
 
 #define TAG "UART_MANAGER_SIM"
 
@@ -40,6 +41,10 @@ static void uart_sim_task(void *pvParameters){
         if (len > 0) {
             if (strstr(response, "SMS Ready") != NULL){
                 ESP_LOGI(TAG, "LISTO PA PROBAR: %s", response);
+                //sim7000_init();
+            }
+            if (strstr(response, ">") != NULL){
+                sendHardTracking();
                 //sim7000_init();
             }
             else{

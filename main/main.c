@@ -10,6 +10,7 @@
 #include "uart_manager.h"
 #include "nvsManager.h"
 #include "deviceManager.h"
+#include "eventHandler.h"
 
 
 #include "esp_log.h"
@@ -20,5 +21,6 @@ void app_main(void)
     nvs_init();
     pwr_init();
     uarts_init();
+    init_event_loop();
     //device_init();
 }
