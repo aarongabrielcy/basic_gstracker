@@ -4,8 +4,14 @@
 #include "esp_log.h"
 #include "esp_check.h"
 #include "uart_serial.h"
-
+#include <string.h>
+#include "sim7000.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #define TAG "EVENT HANDLER"
+
+char date_time[34];
+bool ready_to_track = false;
 
 void system_event_handler(void *handler_arg, esp_event_base_t base, int32_t event_id, void *event_data); 
 
@@ -42,7 +48,11 @@ void system_event_handler(void *handler_arg, esp_event_base_t base, int32_t even
         case TRACKING_RPT:
             ESP_LOGI(TAG, "Generando TRACKING_RPT");
             // Esto ya funciona
-            //uartManager_sendCommand("AT+CIPSEND");
+            // buscar el CONNECT OK PARA ACEPTAR TRACKEOS
+
+            getTimeLocal();
+            vTaskDelay(100);
+            uartManager_sendCommand("AT+CIPSEND");
         break;
         case DEFAULT:
             stop_tracking_report_timer();
@@ -51,10 +61,37 @@ void system_event_handler(void *handler_arg, esp_event_base_t base, int32_t even
     }
 }
 
+/*
+    PRIORIDAD 06/01/2026
+    
+    - CHEQUEAR LO DEL CLOCK PARA TRACKEOS (Hecho)
+    - NVS (Coordenadas 
+            )
+    - CHEQUEAR LO DEL FIX
+    - TRACKEO POR CURVA
+    - OTA
+
+    - INPUTS/ OUTPUTS
+    - BUFFER
+    
+    PRIORIDAD 06/01/2026
+
+*/
+
+void setTimeUTC(const char *time){
+    strncpy(date_time, time, sizeof(date_time) - 1);
+    date_time[sizeof(date_time) - 1] = '\0';
+}
+
+void readyToTrack(){
+    ready_to_track = true;
+}
+
 void sendHardTracking(){
     char imei[10] = "2049830928";
-    char mssg[] = "STT;2049830928;3FFFFF;68;1.0.36;1;20260105;11:27:01;000039C5;334;20;1222;29;+21.023450;-89.584602;0.00;0.00;0;0;00000000;00000000;0;1;5676;4.1;11.94;;;;";
+    char message[256];
+    snprintf(message, sizeof(message), "STT;2049830928;3FFFFF;68;1.0.36;1;%s;000039C5;334;20;1222;29;+21.023450;-89.584602;0.00;0.00;0;0;00000000;00000000;0;1;5676;4.1;11.94;;;;", date_time);
     char ctrl_z_str[2] = { 0x1A, '\0' };
-    uartManager_sendCommand(mssg);
+    uartManager_sendCommand(message);
     uartManager_sendCommand(ctrl_z_str);
 }

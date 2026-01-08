@@ -8,6 +8,7 @@
 #include "esp_log.h"
 #include "sim7000.h"
 #include "tracking.h"
+#include "utilities.h"
 
 #define TAG "UART_MANAGER_SIM"
 
@@ -34,6 +35,22 @@ void uart_sim_init(){
     uart_task_init();
 }
 
+/*
+    pasos para conectarse en TCP
+    - AT+CSTT="internet.itelcel.com"
+    - AT+CIICR
+    - AT+CIFSR
+    - AT+CIPSTART="TCP","201.122.135.23",6100
+
+    - POSTERIORRMENTE SE DEBE MANDAR AT+CIPSEND PARA CADA TRAQUEO
+
+    USAR PSUTTZ PARA VALIDAR ZONA UTC
+    
+
+    Pendientes .- Revisar validacion de trackeos con: CONNECT OK
+
+*/
+
 static void uart_sim_task(void *pvParameters){
     char response[1024];
     while(1){
@@ -41,12 +58,46 @@ static void uart_sim_task(void *pvParameters){
         if (len > 0) {
             if (strstr(response, "SMS Ready") != NULL){
                 ESP_LOGI(TAG, "LISTO PA PROBAR: %s", response);
-                //sim7000_init();
+                sim7000_init();
+                //sim7000_connection_init();
             }
-            if (strstr(response, ">") != NULL){
+            else if (strstr(response, ">") != NULL){
                 sendHardTracking();
                 //sim7000_init();
             }
+            else if (strstr(response, "+CLTS:") != NULL){
+                int data = -1;
+                char *start_data_clts = strstr(response, "+CLTS:");
+                start_data_clts += strlen("+CLTS:");
+                data = atoi(start_data_clts);
+                ESP_LOGI(TAG, "RESPONSE CLTS:%s,%d", response, data);
+                if (data != 1){
+                    getTimeUTC();
+                    ESP_LOGI(TAG, "Activating UTC from network");
+                }
+                else{
+                    ESP_LOGI(TAG, "UTC already activated");
+                }
+            }
+            else if (strstr(response, "*PSUTTZ:") != NULL){
+                int data = -1;
+                char *start_data_psuttz = strstr(response, "*PSUTTZ: ");
+                start_data_psuttz += strlen("*PSUTTZ: ");
+                //Aqui iria la UTC
+                ESP_LOGI(TAG, "psuttz Response,%s", start_data_psuttz);
+            }
+            else if (strstr(response, "+CCLK:") != NULL){ 
+                // aqui va lo de la coordinacion de la hora local
+                char *start_data_clts = strstr(response, "+CCLK:");
+                start_data_clts += strlen("+CCLK: ");
+                char *result = getFormatUTC(start_data_clts);
+                setTimeUTC(result);
+                ESP_LOGI(TAG, "FORMATEO DE LA HORA:%s -- %s", response, result);
+            }
+            /*else if (strstr(response, "+CCLK:") != NULL){
+                
+                // chequeo del CCICR
+            }*/
             else{
                 ESP_LOGI(TAG, "%s", response);
             }

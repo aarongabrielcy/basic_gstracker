@@ -70,53 +70,53 @@ static void serialConsole_task(void *pvParameters){
             if (strstr(data, "AT") != NULL){
                 uartManager_sendCommand((char*)data);
             }
-            if (strstr(data, "ADC_E") != NULL){
+            else if(strstr(data, "ADC_E") != NULL){
                 //ESP_LOGI(TAG, "VOLTAJE BATERIA EXTERNO: %.2f", getBatteryExtern());
             }
-            if (strstr(data, "ADC_I") != NULL){
+            else if (strstr(data, "ADC_I") != NULL){
                 //ESP_LOGI(TAG, "VOLTAJE BATERIA INTERNO: %.2f", getBatteryIntern());
             }
-            if (strstr(data, "SIM7000=1") != NULL){
+            else if (strstr(data, "SIM7000=1") != NULL){
                 //sim7000_init();
             }
-            if (strstr(data, "SIM7000=0") != NULL){
+            else if (strstr(data, "SIM7000=0") != NULL){
                 uartManager_sendCommand("AT+CGNSPWR=0");
             }
-            if (strstr(data, "IN?") != NULL){
+            else if (strstr(data, "IN?") != NULL){
                 //ESP_LOGI(TAG, "VALOR DE ENTRADA ACTUAL: %d", getInValue());
             }
-            if (strstr(data, "IGN?") != NULL){
+            else if (strstr(data, "IGN?") != NULL){
                 //ESP_LOGI(TAG, "VALOR DE IGNICION ACTUAL: %d", getIGNValue());
             }
-            if (strstr(data, "OU?") != NULL){
+            else if (strstr(data, "OU?") != NULL){
                 //ESP_LOGI(TAG, "VALOR DE OUTPUT ACTUAL: %d", getOUValue());
             }
-            if (strstr(data, "OU=1") != NULL){
+            else if (strstr(data, "OU=1") != NULL){
                 ESP_LOGI(TAG, "CAMBIANDO OUTPUT");
                 //OU_on();
             }
-            if (strstr(data, "OU=0") != NULL){
+            else if (strstr(data, "OU=0") != NULL){
                 ESP_LOGI(TAG, "CAMBIANDO OUTPUT");
                 //OU_off();
             }
-            if (strstr(data, "ACCEL?") != NULL){
+            else if (strstr(data, "ACCEL?") != NULL){
                 //int16_t x,y,z;
                 //getAccelValue(&x, &y, &z);
                 //ESP_LOGI(TAG, "VALOR DE ACELERACION X: %d, Y: %d, Z: %d", x, y, z);
             }
-            if (strstr(data, "StatusReq") != NULL){
+            else if (strstr(data, "StatusReq") != NULL){
                 esp_event_post_to(get_event_loop(), SYSTEM_EVENTS, TRACKING_RPT, NULL, 0, portMAX_DELAY);
             }
-            if (strstr(data, "KeepAlive") != NULL){
+            else if (strstr(data, "KeepAlive") != NULL){
                 esp_event_post_to(get_event_loop(), SYSTEM_EVENTS, KEEP_ALIVE, NULL, 0, portMAX_DELAY);
             }
-            if (strstr(data, "IGN=1") != NULL){
+            else if (strstr(data, "IGN=1") != NULL){
                 esp_event_post_to(get_event_loop(), SYSTEM_EVENTS, IGNITION_ON, NULL, 0, portMAX_DELAY);
             }
-            if (strstr(data, "IGN=0") != NULL){
+            else if (strstr(data, "IGN=0") != NULL){
                 esp_event_post_to(get_event_loop(), SYSTEM_EVENTS, IGNITION_OFF, NULL, 0, portMAX_DELAY);
             }
-            if (strstr(data, "IGN=3") != NULL){
+            else if (strstr(data, "IGN=3") != NULL){
                 esp_event_post_to(get_event_loop(), SYSTEM_EVENTS, IGNITION_OFF, NULL, 0, portMAX_DELAY);
             }
             else{

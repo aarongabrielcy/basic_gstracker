@@ -26,7 +26,7 @@ static void IRAM_ATTR setValue_ign(void *args){
 
 void configure_gpio_input(void *pvParameters){
     gpio_config_t in_conf = {};
-    in_conf.intr_type = GPIO_INTR_NEGEDGE; 
+    in_conf.intr_type = GPIO_INTR_ANYEDGE; 
     in_conf.mode = GPIO_MODE_INPUT;      
     in_conf.pin_bit_mask = (1ULL << INPUT2_PIN); 
     in_conf.pull_down_en = 0;
