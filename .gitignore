@@ -1,7 +1,6 @@
 .devcontainer/
 build/
 sdkconfig*
-config/
 *.elf
 *.bin
 *.map
