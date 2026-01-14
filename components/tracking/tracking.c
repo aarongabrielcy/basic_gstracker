@@ -69,6 +69,7 @@ void system_event_handler(void *handler_arg, esp_event_base_t base, int32_t even
             ESP_LOGI(TAG, "Generando TRACKING_RPT");
             // Esto ya funciona
             // buscar el CONNECT OK PARA ACEPTAR TRACKEOS
+            // AL llegar a este este evento debe mandar un primer trackeo antes de empezar a mandarlo con el timmer
             sync_tracker_data();
             send_track_data();
         break;
@@ -95,7 +96,7 @@ void system_event_handler(void *handler_arg, esp_event_base_t base, int32_t even
     PRIORIDAD 06/01/2026
 
 */
-
+//agregar setTimeUTC a utilities.h
 void setTimeUTC(const char *time){
     strncpy(date_time, time, sizeof(date_time) - 1);
     date_time[sizeof(date_time) - 1] = '\0';
@@ -106,16 +107,20 @@ void set_net_connectivity(uint8_t signal){
 }
 
 void sync_tracker_data(){
-    getTimeLocal();
+    if(gnss.fix == 0){
+            getTimeLocal();
+    }else {
+     snprintf(date_time, sizeof(date_time), "%s;%s", formatDate(gnss.date), formatTime(gnss.utctime));   
+    }
     vTaskDelay(100);
     getCellData();
     vTaskDelay(100);
-    if (network){
+    //if (network){
         uartManager_sendCommand("AT+CIPSEND");
-    }
+   /* }
     else{
         // buffer
-    }
+    }*/
     
 }
 

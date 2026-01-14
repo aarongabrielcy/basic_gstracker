@@ -37,7 +37,7 @@ void uart_gnss_init() {
 
 void print_gnss_data(const gnssData_t *data) {
     ESP_LOGI("GPS_LOG", "----------------------------------------");
-    ESP_LOGI("GPS_LOG", "ESTADO FIX : %d", data->fix);
+    /*ESP_LOGI("GPS_LOG", "ESTADO FIX : %d", data->fix);
     ESP_LOGI("GPS_LOG", "MODO       : %dD", data->mode);
     ESP_LOGI("GPS_LOG", "SATELITES  : GPS:%d | GLSS:%d | BEID:%d", data->gps_svs, data->glss_svs, data->beid_svs);
     
@@ -53,7 +53,8 @@ void print_gnss_data(const gnssData_t *data) {
     ESP_LOGI("GPS_LOG", "HORA (UTC) : %s", data->utctime);
     
     // Precisión (DOP)
-    ESP_LOGI("GPS_LOG", "DOP        : PDOP:%.2f | HDOP:%.2f | VDOP:%.2f", data->pdop, data->hdop, data->vdop);
+    ESP_LOGI("GPS_LOG", "DOP        : PDOP:%.2f | HDOP:%.2f | VDOP:%.2f", data->pdop, data->hdop, data->vdop);*/
+    ESP_LOGI(TAG, "lat: %.6f, lon: %.6f, alt: %.2f, speed: %.2f, course: %.2f, fix: %d, sat %d:, date: %s, time: %s", data->lat, data->lon, data->alt, data->speed, data->course, data->fix, data->gps_svs, data->date, data->utctime);
     ESP_LOGI("GPS_LOG", "----------------------------------------");
 }
 
@@ -94,7 +95,9 @@ static void gnss_task_init(void *arg) {
             } else {
                 //ESP_LOGI(TAG, "Esperando señal GPS...");
             }
-            //print_gnss_data(&gnss);
+            if(RAW_GNSS) {
+                print_gnss_data(&gnss);
+            }
         }
     }
 }

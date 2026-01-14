@@ -23,3 +23,5 @@
 #define PIN_CLK   12
 #define PIN_MOSI  10
 #define PIN_MISO  9 
+#define RAW_NMEA false
+#define RAW_GNSS false

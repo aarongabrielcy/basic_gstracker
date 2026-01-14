@@ -7,9 +7,18 @@
 #include <math.h>
 #include "esp_check.h"
 #include "esp_log.h"
+#include "config.h"
 
 #define ANGLE_THRESHOLD 15.0  // Umbral de cambio de ángulo
 float previousCourse = -1.0;
+#define COURSE_SPEED_THRESHOLD_KN  0.5f
+/**
+Ajuste de umbral:
+
+- 0.2 kn sensible (≈0.37 km/h)
+- 0.5 kn recomendado
+- 1.0 kn "cero" cuando está casi quieto (≈1.85 km/h)
+ */
 #define TAG "NMEA"
 // Inicializar los valores por defecto
 gnssData_t gnss = {
@@ -46,6 +55,9 @@ static double nmea_to_decimal(double nmea_coord, char direction) {
 }
 
 void parse_nmea_sentence(const char *line, gnssData_t *out_data) {
+    if(RAW_NMEA) {
+        ESP_LOGI(TAG, "RAW NMEA line DATA: %s", line);
+    }
     if (line == NULL || out_data == NULL) return;
 
     // 1. $GNRMC - Datos básicos (Lat, Lon, Fecha, Hora, Velocidad)
@@ -53,11 +65,22 @@ void parse_nmea_sentence(const char *line, gnssData_t *out_data) {
         double raw_lat = 0, raw_lon = 0;
         char status;
         // Formato: $GNRMC,time,status,lat,N,lon,W,speed,course,date,...
-        sscanf(line, "$GNRMC,%[^,],%c,%lf,%c,%lf,%c,%f,%f,%[^,]",out_data->utctime, &status, &raw_lat, &out_data->ns, &raw_lon, &out_data->ew, &out_data->speed, &out_data->course, out_data->date);
-        
-        if (status == 'A') { // 'A' = Valid, 'V' = Void
+        int parsed = sscanf(line, "$GNRMC,%[^,],%c,%lf,%c,%lf,%c,%f,%f,%[^,]",out_data->utctime, &status, &raw_lat, &out_data->ns, &raw_lon, &out_data->ew, &out_data->speed, &out_data->course, out_data->date);
+        if (parsed < 3) return;
+        if (status != 'A') {
+            out_data->course = 0.0f;
+            // opcional: también podrías poner speed=0
+            // out_data->speed = 0.0f;
+            return;
+        }
+        if (status == 'A' && raw_lat != 0.0 && raw_lon != 0.0) { // 'A' = Valid, 'V' = Void
             out_data->lat = nmea_to_decimal(raw_lat, out_data->ns);
             out_data->lon = nmea_to_decimal(raw_lon, out_data->ew);
+        }
+        // Zero out course when stationary:
+        // Si la velocidad es muy baja, el rumbo no es confiable => 0
+        if (out_data->speed < COURSE_SPEED_THRESHOLD_KN) {
+            out_data->course = 0.0f;
         }
     }
 

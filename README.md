@@ -51,3 +51,12 @@ Please use the following feedback channels:
 * For a feature request or bug report, create a [GitHub issue](https://github.com/espressif/esp-idf/issues)
 
 We will get back to you as soon as possible.
+
+## activate debug mode via command
+
+develop mode bool
+debug mode bool
+raw data NMEA  bool
+raw data GNSS bool
+raw data cellNet bool
+
