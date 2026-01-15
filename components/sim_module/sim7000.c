@@ -70,6 +70,8 @@ void sim7000_connection_with_server(){
     vTaskDelay(200);
     sim7000_command("AT+CIICR");
     vTaskDelay(200);
+    /*sim7000_command("AT+CIPTKA=1,120,60,5");
+    vTaskDelay(200);*/
     sim7000_command("AT+CIPSTART='TCP','201.122.135.23',6100");
     vTaskDelay(200);
     sim7000_conn_stop();

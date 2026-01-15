@@ -24,4 +24,6 @@
 #define PIN_MOSI  10
 #define PIN_MISO  9 
 #define RAW_NMEA false
-#define RAW_GNSS false
+#define GNSS_DATA false
+#define RAW_CPSI false
+#define CELL_DATA false

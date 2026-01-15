@@ -49,6 +49,25 @@ esp_event_loop_handle_t init_event_loop(void) {
 }
 
 esp_event_loop_handle_t get_event_loop(){
+    if (!event_loop_handle) {
+        ESP_LOGW("EVENT_HANDLER", "Event loop no inicializado. Creando...");
+        
+        esp_event_loop_args_t loop_args = {
+            .queue_size = 10,
+            .task_name = "event_task",
+            .task_priority = 5,
+            .task_stack_size = 4096,  // Incrementado el stack por seguridad
+            .task_core_id = 0
+        };
+
+        esp_err_t err = esp_event_loop_create(&loop_args, &event_loop_handle);
+        if (err != ESP_OK) {
+            ESP_LOGE("EVENT_HANDLER", "Error creando event loop: %s", esp_err_to_name(err));
+            return NULL;
+        }
+        
+        //initialized = true;
+    }   
     return event_loop_handle;
 }
 

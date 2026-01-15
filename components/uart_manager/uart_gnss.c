@@ -95,7 +95,7 @@ static void gnss_task_init(void *arg) {
             } else {
                 //ESP_LOGI(TAG, "Esperando señal GPS...");
             }
-            if(RAW_GNSS) {
+            if(GNSS_DATA) {
                 print_gnss_data(&gnss);
             }
         }

@@ -15,71 +15,21 @@
 #include "utilities.h"
 #include <stdint.h>
 #include "buffer.h"
-#define TAG "EVENT HANDLER"
+#define TAG "TRACKING PROCESSOR"
 
 char date_time[34];
 char latitud[20] = "+0.000000";
 char longitud[20] = "+0.000000";
 bool network = false;
 bool curve_tracking = false;
+int event = DEFAULT;
+static int keep_alive_interval = 600000; // Valor en milisegundos (10 minutos)
 
 void sync_tracker_data();
-void send_inputOnAlert_data();
-void send_inputOffAlert_data();
-
-void system_event_handler(void *handler_arg, esp_event_base_t base, int32_t event_id, void *event_data); 
-
-void start_event_handler(void) {
-    esp_event_loop_handle_t loop = get_event_loop();
-    esp_event_handler_register_with(loop, SYSTEM_EVENTS, ESP_EVENT_ANY_ID, system_event_handler, NULL);
-}
 
 //AT+CIPSTART="TCP","201.122.135.23",6100
 //AT+CIPSTART="TCP","34.196.135.179",5200
 // //6008
-
-void system_event_handler(void *handler_arg, esp_event_base_t base, int32_t event_id, void *event_data) {
-    switch (event_id) {
-        case IGNITION_ON:
-            ESP_LOGI(TAG, "Ignition=> ENCENDIDA"); 
-            tkr.ign = 1;
-            start_tracking_report_timer();
-            stop_keep_alive_timer();
-            break;
-        case IGNITION_OFF:
-            ESP_LOGI(TAG, "Ignition=> APAGADA, generando Keep alives"); 
-            tkr.ign = 0;
-            stop_tracking_report_timer();
-            start_keep_alive_timer();
-            break;
-        case INPUT1_ON:
-            ESP_LOGI(TAG, "INPUT_1=> ENCENDIDA");
-            sync_tracker_data();
-            send_inputOnAlert_data(); 
-            break;
-        case INPUT1_OFF:
-        ESP_LOGI(TAG, "INPUT_1=> APAGADA");
-            sync_tracker_data();
-            send_inputOffAlert_data();
-            break;
-        case KEEP_ALIVE:
-            ESP_LOGI(TAG, "Generando KEEP ALIVE");
-            break;
-        case TRACKING_RPT:
-            ESP_LOGI(TAG, "Generando TRACKING_RPT");
-            // Esto ya funciona
-            // buscar el CONNECT OK PARA ACEPTAR TRACKEOS
-            // AL llegar a este este evento debe mandar un primer trackeo antes de empezar a mandarlo con el timmer
-            sync_tracker_data();
-            send_track_data();
-        break;
-        case DEFAULT:
-            stop_tracking_report_timer();
-            stop_keep_alive_timer();            
-        break;
-    }
-}
-
 /*
     PRIORIDAD 06/01/2026
     
@@ -92,7 +42,7 @@ void system_event_handler(void *handler_arg, esp_event_base_t base, int32_t even
 
     - INPUTS/ OUTPUTS
     - BUFFER
-    
+    - Valida el estado del GPIO de IGN  para activar/descactivar keep alive
     PRIORIDAD 06/01/2026
 
 */
@@ -113,7 +63,7 @@ void sync_tracker_data(){
      snprintf(date_time, sizeof(date_time), "%s;%s", formatDate(gnss.date), formatTime(gnss.utctime));   
     }
     vTaskDelay(100);
-    getCellData();
+    getCellData();// ejecutar cada 28 segundos cambiar de lugar
     vTaskDelay(100);
     //if (network){
         uartManager_sendCommand("AT+CIPSEND");
@@ -121,9 +71,16 @@ void sync_tracker_data(){
     else{
         // buffer
     }*/
-    
 }
-
+void reconnect_network(){
+    /*uartManager_sendCommand("AT+CIICR");
+    vTaskDelay(2000);
+    uartManager_sendCommand("AT+CIFSR");
+    vTaskDelay(2000);*/
+    uartManager_sendCommand("AT+CIPSTART=\"TCP\",\"201.122.135.23\",6100");
+    vTaskDelay(2000);
+    //uartManager_sendCommand("AT+CIPSEND");
+}
 static void send_ctrlZ(const char *message){
     char ctrl_z_str[2] = { 0x1A, '\0' };
     uartManager_sendCommand(message);
@@ -131,31 +88,88 @@ static void send_ctrlZ(const char *message){
 }
 
 void send_track_data(){
+
     char message[256];
     strcpy(latitud, formatCoordinates(gnss.lat, gnss.ns));
     strcpy(longitud, formatCoordinates(gnss.lon, gnss.ew));
-    //snprintf(message, sizeof(message), "STT;%s;3FFFFF;95;1.0.21;1;%s;%s;%d;%d;%s;%d;%s;%s;%.2f;%.2f;%d;%d;%d%d00000%d;00000000;0;1;5676;4.1;11.94", nvs_data.device_id, date_time, cpsi.cell_id, cpsi.mcc, cpsi.mnc, cpsi.lac_tac, cpsi.rxlvl_rsrp, latitud, longitud, gnss.speed,gnss.course, gnss.gps_svs,gnss.fix, tkr.tkr_course, tkr.tkr_meters, tkr.ign);
-    snprintf(message, sizeof(message), "STT;%s;3FFFFF;95;1.0.21;1;%s;%s;%d;%d;%s;11;%s;%s;%.2f;%.2f;%d;%d;%d%d00000%d;00000000;0;1;5676;4.1;11.94", nvs_data.device_id, date_time, cpsi.cell_id, cpsi.mcc, cpsi.mnc, cpsi.lac_tac, latitud, longitud, gnss.speed,gnss.course, gnss.gps_svs,gnss.fix, tkr.tkr_course, tkr.tkr_meters, tkr.ign);
-    // Esto solo es para simular el mandado
-    ESP_LOGI(TAG, "TRACK:%s", message);
-    //sst26_guardar_mensaje(message);
+
+    switch (event) {       
+        case TRACKING_RPT:
+            snprintf(message, sizeof(message), "STT;%s;3FFFFF;95;1.0.21;1;%s;%s;%d;%d;%s;11;%s;%s;%.2f;%.2f;%d;%d;%d%d00000%d;00000000;0;1;5676;4.1;11.94", nvs_data.device_id, date_time, cpsi.cell_id, cpsi.mcc, cpsi.mnc, cpsi.lac_tac, latitud, longitud, gnss.speed,gnss.course, gnss.gps_svs,gnss.fix, tkr.tkr_course, tkr.tkr_meters, tkr.ign);
+            event = tkr.tkr_course || tkr.tkr_meters ? TRACKING_RPT : DEFAULT;
+
+        break;
+        case IGNITION_ON:
+            snprintf(message, sizeof(message), "ALT;%s;3FFFFF;95;1.0.21;1;%s;%s;%d;%d;%s;11;%s;%s;%.2f;%.2f;%d;%d;%d%d00000%d;00000000;%d;;",nvs_data.device_id, date_time,cpsi.cell_id, cpsi.mcc, cpsi.mnc, cpsi.lac_tac, latitud, longitud, gnss.speed, gnss.course,gnss.gps_svs, gnss.fix, tkr.tkr_course, tkr.tkr_meters, tkr.ign, 33);
+        event = DEFAULT;
+        break;
+        case IGNITION_OFF:
+            snprintf(message, sizeof(message), "ALT;%s;3FFFFF;95;1.0.21;1;%s;%s;%d;%d;%s;11;%s;%s;%.2f;%.2f;%d;%d;%d%d00000%d;00000000;%d;;",nvs_data.device_id, date_time,cpsi.cell_id, cpsi.mcc, cpsi.mnc, cpsi.lac_tac, latitud, longitud, gnss.speed, gnss.course,gnss.gps_svs, gnss.fix, tkr.tkr_course, tkr.tkr_meters, tkr.ign, 34);
+        event = DEFAULT;
+        break;
+        case KEEP_ALIVE:
+            snprintf(message, sizeof(message), "ALV;%s",nvs_data.device_id);    
+            event = DEFAULT;
+        break;    
+        default:
+            snprintf(message, sizeof(message), "ALV;%s",nvs_data.device_id);
+            ESP_LOGW(TAG, "<head>\n<sys_mode>%s<oper>%s<cell_id>%s<mcc>%d<mnc>%d<lac>%s<rx_lvl>%d<date_time>%s,<lat>%s,<lon>%s,<speed>%.2f,<fix>%d,<ign>%d,<id>%s,<ccid>%s,<wifi_AP_mac>%s,<Ble Mac>%s<tkr_course>%d,<tkr_meters>%d", 
+                cpsi.sys_mode, cpsi.oper_mode, cpsi.cell_id, cpsi.mcc, cpsi.mnc, cpsi.lac_tac, cpsi.rxlvl_rsrp, date_time, latitud, longitud, gnss.speed, gnss.fix, tkr.ign, nvs_data.device_id, nvs_data.sim_iccid, nvs_data.wifi_ap, 
+                nvs_data.blue_addr, tkr.tkr_course, tkr.tkr_meters); 
+        break;
+    }
+    ESP_LOGI(TAG, "Event:%d, Message:%s", event, message);
     send_ctrlZ(message);
 }
 
-void send_inputOnAlert_data(){
-    char message[256];
-    strcpy(latitud, formatCoordinates(gnss.lat, gnss.ns));
-    strcpy(longitud, formatCoordinates(gnss.lon, gnss.ew));
-    snprintf(message, sizeof(message), "ALT;%s;3FFFFF;95;1.0.21;1;%s;%s;%d;%d;%s;11;%s;%s;%.2f;%.2f;%d;%d;%d%d00000%d;00000000;%d;;",nvs_data.device_id, date_time,cpsi.cell_id, cpsi.mcc, cpsi.mnc, cpsi.lac_tac, longitud, latitud,gnss.speed, gnss.course,gnss.gps_svs, gnss.fix, tkr.tkr_course, tkr.tkr_meters, tkr.ign, 33);
-    ESP_LOGI(TAG, "ALT:%s", message);
-    send_ctrlZ(message);
+void system_event_handler(void *handler_arg, esp_event_base_t base, int32_t event_id, void *event_data) {
+    switch (event_id) {
+        case IGNITION_ON:
+            ESP_LOGI(TAG, "Ignition=> ENCENDIDA"); 
+            tkr.ign = 1;
+            event = IGNITION_ON;
+            start_tracking_report_timer();
+            stop_keep_alive_timer();
+            sync_tracker_data(event);
+            break;
+        case IGNITION_OFF:
+            ESP_LOGI(TAG, "Ignition=> APAGADA, generando Keep alives"); 
+            tkr.ign = 0;
+            event = IGNITION_OFF;
+            stop_tracking_report_timer();
+            start_keep_alive_timer();
+            sync_tracker_data();
+            break;
+        case INPUT1_ON:
+            ESP_LOGI(TAG, "INPUT_1=> ENCENDIDA");
+            sync_tracker_data();
+            break;
+        case INPUT1_OFF:
+            ESP_LOGI(TAG, "INPUT_1=> APAGADA");
+            sync_tracker_data();
+            break;
+        case KEEP_ALIVE:
+            event = KEEP_ALIVE;
+            ESP_LOGI(TAG, "Evento KEEP_ALIVE: han pasado %d minutos", keep_alive_interval / 60000);
+            sync_tracker_data();
+
+            break;
+        case TRACKING_RPT:
+            event = TRACKING_RPT;
+            ESP_LOGI(TAG, "Generando TRACKING_RPT");
+            // Esto ya funciona
+            // buscar el CONNECT OK PARA ACEPTAR TRACKEOS
+            // AL llegar a este este evento debe mandar un primer trackeo antes de empezar a mandarlo con el timmer
+            sync_tracker_data();
+        break;
+        case DEFAULT:
+            stop_tracking_report_timer();
+            stop_keep_alive_timer();            
+        break;
+    }
 }
 
-void send_inputOffAlert_data(){
-    char message[256];
-    strcpy(latitud, formatCoordinates(gnss.lat, gnss.ns));
-    strcpy(longitud, formatCoordinates(gnss.lon, gnss.ew));
-    snprintf(message, sizeof(message), "ALT;%s;3FFFFF;95;1.0.21;1;%s;%s;%d;%d;%s;11;%s;%s;%.2f;%.2f;%d;%d;%d%d00000%d;00000000;%d;;",nvs_data.device_id, date_time,cpsi.cell_id, cpsi.mcc, cpsi.mnc, cpsi.lac_tac, longitud, latitud,gnss.speed, gnss.course,gnss.gps_svs, gnss.fix, tkr.tkr_course, tkr.tkr_meters, tkr.ign, 34);
-    ESP_LOGI(TAG, "ALT:%s", message);
-    send_ctrlZ(message);
+void start_event_handler(void) {
+    esp_event_loop_handle_t loop = get_event_loop();
+    esp_event_handler_register_with(loop, SYSTEM_EVENTS, ESP_EVENT_ANY_ID, system_event_handler, NULL);
 }
