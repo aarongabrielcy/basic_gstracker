@@ -73,8 +73,25 @@ static void uart_sim_task(void *pvParameters){
                 //sim7000_connection_init();
             }
             else if (strstr(response, ">") != NULL){
+                ESP_LOGE(TAG, "Detected '>'");
                 send_track_data();
                 //sim7000_init();
+                //RETUR BOOL
+            }
+            else if (strstr(response, "SEND OK") != NULL){
+                ESP_LOGI(TAG, "RESP SUCCESSFULLY CIPSEND:%s", response);
+            }
+            else if (strstr(response, "SEND FAIL") != NULL){
+                ESP_LOGI(TAG, "SEND FAIL CIPSEND:%s", response);
+                reconnect_network();
+            }
+            else if (strstr(response, "ERROR") != NULL){
+                ESP_LOGI(TAG, "ERROR CIPSEND CONN:%s", response);
+                reconnect_network();
+            }
+            else if (strstr(response, "CLOSED") != NULL){
+                ESP_LOGI(TAG, "CLOSED FAIL CIPSEND:%s", response);
+                reconnect_network();
             }
             else if (strstr(response, "+CLTS:") != NULL){
                 int data = -1;
@@ -102,7 +119,7 @@ static void uart_sim_task(void *pvParameters){
                 start_data_clts += strlen("+CCLK: ");
                 char *result = getFormatUTC(start_data_clts);
                 setTimeUTC(result);
-                ESP_LOGI(TAG, "FORMATEO DE LA HORA:%s -- %s", response, result);
+                //ESP_LOGI(TAG, "FORMATEO DE LA HORA:%s -- %s", response, result);
             }
             else if (strstr(response, "AT+CGSN") != NULL){
                 //char *start_data_imei = strstr(response, "AT+GSN");
@@ -129,7 +146,7 @@ static void uart_sim_task(void *pvParameters){
                 }
             }
             else if (strstr(response, "+CPSI:") != NULL){
-                ESP_LOGI(TAG, "ENTRA CPSI");
+                //ESP_LOGI(TAG, "ENTRA CPSI");
                 if (parsePSI(response)){
                     // habilitar trackeo tiempo real
                     set_net_connectivity(1);

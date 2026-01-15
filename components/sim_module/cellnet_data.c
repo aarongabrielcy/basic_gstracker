@@ -3,6 +3,7 @@
 #include "esp_check.h"
 #include "esp_log.h"
 #include "utilities.h"
+#include "config.h"
 
 #define TAG "CELL_NETWORK"
 // Inicializar los valores por defecto
@@ -110,8 +111,10 @@ void parseLTE(char *tokens) {
     cpsi.cell_id[sizeof(cpsi.cell_id) - 1] = '\0';
 
     cpsi.rxlvl_rsrp = atoi(values[11]) /10;
-    ESP_LOGI(TAG, "LTE Parseado: MCC:%d, MNC:%d, TAC:%s, CellID:%s, RSRP:%d",
-             cpsi.mcc, cpsi.mnc, cpsi.lac_tac, cpsi.cell_id, cpsi.rxlvl_rsrp);
+    if (CELL_DATA) {
+        ESP_LOGI(TAG, "LTE Parseado: MCC:%d, MNC:%d, TAC:%s, CellID:%s, RSRP:%d",
+                 cpsi.mcc, cpsi.mnc, cpsi.lac_tac, cpsi.cell_id, cpsi.rxlvl_rsrp);
+    }
 }
 
 void parseWCDMA(char *tokens) {
