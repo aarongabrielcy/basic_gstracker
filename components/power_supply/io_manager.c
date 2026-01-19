@@ -16,8 +16,7 @@ TaskHandle_t io_task = NULL;
 uint8_t ou = 0;
 uint8_t getInValue();
 
-
-static void IRAM_ATTR setValue_ign(void *args){
+static void IRAM_ATTR setValue_ign(void *args) {
     
     uint64_t now = esp_timer_get_time();
     if ((now - last_time) > DEBOUNCE_TIME_US) {
@@ -50,6 +49,7 @@ void configure_gpio_input(void *pvParameters){
     gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
     gpio_isr_handler_add(IGNITION_PIN, setValue_ign, NULL);
     uint8_t previous_level = getInValue();
+    //getIGNValue();
     while(1){
         uint8_t current_level = getInValue();
         if(current_level != previous_level){
@@ -73,8 +73,14 @@ uint8_t getInValue(){
     return gpio_get_level(INPUT2_PIN);
 }
 
-uint8_t getIGNValue(){
-    return gpio_get_level(IGNITION_PIN);
+uint8_t getIGNValue() {
+     if (gpio_get_level(IGNITION_PIN)) {
+        esp_event_post_to(get_event_loop(), SYSTEM_EVENTS, IGNITION_OFF, NULL, 0, portMAX_DELAY);
+        return 0;
+    }else {
+        esp_event_post_to(get_event_loop(), SYSTEM_EVENTS, IGNITION_ON, NULL, 0, portMAX_DELAY);
+        return 1;
+    }
 }
 
 void configure_gpio_ou(void)

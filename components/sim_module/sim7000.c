@@ -40,7 +40,7 @@ void sim7000_basic_config() {
     sim7000_command("AT+CIPSTART=\"TCP\",\"201.122.135.23\",6100");
     vTaskDelay(200);
     
-    sim7000_stop();
+    sim7000_stop(); // termina la tarea de configuracion
 }
 /*
     pasos para conectarse en TCP
@@ -65,14 +65,29 @@ uint8_t request_ccid(){
     return 1;
 }
 
+uint8_t request_cpin(){
+    sim7000_command("AT+CPIN?");
+    return 1;
+}
+uint8_t request_cipstatus(){
+    sim7000_command("AT+CIPSTATUS");
+    return 1;
+}
+uint8_t request_cipstop(){
+    sim7000_command("AT+CIPCLOSE");
+    return 1;
+}
 void sim7000_connection_with_server(){
+    /*sim7000_command("AT+CIPSHUT");
+    vTaskDelay(200);*/
     sim7000_command("AT+CSTT='internet.itelcel.com'");
     vTaskDelay(200);
     sim7000_command("AT+CIICR");
     vTaskDelay(200);
     /*sim7000_command("AT+CIPTKA=1,120,60,5");
     vTaskDelay(200);*/
-    sim7000_command("AT+CIPSTART='TCP','201.122.135.23',6100");
+    sim7000_command("AT+CIPSTART='TCP','10.64.6.9',5205");
+    //sim7000_command("AT+CIPSTART='TCP','201.122.135.23',6100");
     vTaskDelay(200);
     sim7000_conn_stop();
 }

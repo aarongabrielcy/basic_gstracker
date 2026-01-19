@@ -8,3 +8,4 @@ uint8_t OU_off(void);
 uint8_t OU_on(void);
 void ou_init(void);
 void input_init(void);
+uint8_t getIGNValue();

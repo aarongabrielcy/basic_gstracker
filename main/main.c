@@ -4,6 +4,7 @@
 #include "device_manager.h"
 #include "eventHandler.h"
 #include "buffer.h"
+#include "io_manager.h"
 
 void app_main(void) {
     nvs_init();
@@ -12,4 +13,5 @@ void app_main(void) {
     uarts_init();
     init_event_loop();
     device_init();
+    getIGNValue();
 }

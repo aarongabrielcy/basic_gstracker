@@ -17,6 +17,11 @@ typedef struct {
     float bck_volt;      // 0.00
     float power_volt;    // 0.00
     int ign;
+    int sim_inserted;
+    int network_status;
+    int tcp_connected;
+    int wifi_connected;
+    int bluetooth_connected;
 } trackerData_t;
 
 extern trackerData_t tkr;

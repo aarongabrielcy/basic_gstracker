@@ -11,6 +11,7 @@
 #include "utilities.h"
 #include "device_manager.h"
 #include "cellnet_data.h"
+#include "tracker_model.h"
 
 #define TAG "UART_MANAGER_SIM"
 
@@ -63,12 +64,12 @@ static void uart_sim_task(void *pvParameters){
                 // EN ESPERA DE APROBACION
                 //ESP_LOGI(TAG, "CHECKING NVS DATA:%s", response);
                 //check_nvs_data();
+                ESP_LOGI(TAG, "SIM MODULE INT READY:%s", response);
             }
             if (strstr(response, "SMS Ready") != NULL){
                 ESP_LOGI(TAG, "LISTO PA PROBAR: %s", response);
                 // Este es el que uso ahora
                 sim7000_init();
-                
                 // Se planea iniciar y aislar la conexion con este
                 //sim7000_connection_init();
             }
@@ -78,21 +79,67 @@ static void uart_sim_task(void *pvParameters){
                 //sim7000_init();
                 //RETUR BOOL
             }
+            else if (strstr(response, "NO SERVICE") != NULL){
+                ESP_LOGI(TAG, "CELL DATA ERROR:%s", response);
+                tkr.network_status = 0;
+            }
+             else if (strstr(response, "+CPIN: READY") != NULL){
+                ESP_LOGI(TAG, "SIM card Inserted and Ready:%s", response);
+                tkr.sim_inserted = 1;
+            }
+            else if (strstr(response, "+CPIN: NOT INSERTED") != NULL){
+                ESP_LOGI(TAG, "no SIM card Inserted:%s", response);
+                tkr.sim_inserted = 0;
+            }
+            else if (strstr(response, "DEACT") != NULL){
+                ESP_LOGI(TAG, "no connect GPRS Red:%s", response);
+                tkr.network_status = 0;
+                //agregar reboot de MCU con eso se conecta a la red
+            }
+            else if (strstr(response, "ALREADY CONNECT") != NULL){
+                if(!tkr.tcp_connected ) {
+                    tkr.tcp_connected = 1;
+                }
+                ESP_LOGI(TAG, "ALREADY CONNECTED TCP:%s", response);
+            }
+            else if (strstr(response, "CONNECT OK") != NULL){
+                ESP_LOGI(TAG, "CONNECTED TCP:%s", response);
+                tkr.tcp_connected = 1;
+            }
             else if (strstr(response, "SEND OK") != NULL){
                 ESP_LOGI(TAG, "RESP SUCCESSFULLY CIPSEND:%s", response);
             }
             else if (strstr(response, "SEND FAIL") != NULL){
-                ESP_LOGI(TAG, "SEND FAIL CIPSEND:%s", response);
-                reconnect_network();
+                tkr.tcp_connected = 0;    
+                if(!tkr.tcp_connected || tkr.sim_inserted){
+                    request_cipstatus();
+                    //reconnect_network();
+                    ESP_LOGI(TAG, "SEND FAIL CIPSEND:%s", response);
+                }
             }
             else if (strstr(response, "ERROR") != NULL){
-                ESP_LOGI(TAG, "ERROR CIPSEND CONN:%s", response);
-                reconnect_network();
+                
+                if(!tkr.tcp_connected || tkr.sim_inserted){
+                    ESP_LOGI(TAG, "ERROR CIPSEND CONN:%s", response);
+                    //reconnect_network();
+                    request_cipstatus();
+
+                }
             }
-            else if (strstr(response, "CLOSED") != NULL){
-                ESP_LOGI(TAG, "CLOSED FAIL CIPSEND:%s", response);
-                reconnect_network();
+            else if (strstr(response, "CLOSED") != NULL){     
+                tkr.tcp_connected = 0;           
+                if(!tkr.tcp_connected || tkr.sim_inserted){
+                    ESP_LOGI(TAG, "CLOSED CIPSEND:%s", response);
+                    reconnect_network();
+                }
             }
+            /*else if (strstr(response, "TCP CLOSED") != NULL){
+                tkr.tcp_connected = 0;
+                if(!tkr.tcp_connected || tkr.sim_inserted){
+                    ESP_LOGI(TAG, "TCP CLOSED FAIL CIPSEND:%s", response);
+                    reconnect_network();
+                }
+            }*/   
             else if (strstr(response, "+CLTS:") != NULL){
                 int data = -1;
                 char *start_data_clts = strstr(response, "+CLTS:");

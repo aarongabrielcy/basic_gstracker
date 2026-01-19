@@ -24,7 +24,7 @@ esp_event_loop_handle_t init_event_loop(void);
 esp_event_loop_handle_t get_event_loop(void);
 
 #define TRACKING_REPORT_TIME 30000 //30000
-#define KEEPALIVE_REPORT_TIME 600000// 10s = 10000 / 5min = 300000 / 30min = 1800000 / 1min = 60000
+#define KEEPALIVE_REPORT_TIME 300000// 10s = 10000 / 5min = 300000 / 30min = 1800000 / 1min = 60000
 
 /*void set_keep_alive_interval(uint32_t interval_ms);*/
 void start_keep_alive_timer(void);
