@@ -136,6 +136,22 @@ static void serialConsole_task(void *pvParameters){
                 sst26_leer_enviar_y_borrar();
 
             }
+            else if (strstr(data, "BUFFER=2") != NULL){
+                ESP_LOGI(TAG, "--- LEER TODO ---");
+                fifo_print_used_sectors();
+            }
+            else if (strstr(data, "BUFFER=3") != NULL){
+                ESP_LOGI(TAG, "--- borrando todo ---");
+                fifo_erase_all();
+            }
+            else if (strstr(data, "BUFFER?=") != NULL){
+                ESP_LOGI(TAG, "--- Leyendo sector  ---");
+                uint32_t data_n = -1;
+                char *start_data_clts = strstr(data, "BUFFER?=");
+                start_data_clts += strlen("BUFFER?=");
+                data_n = atoi(start_data_clts);
+                fifo_print_sector_messages(data_n);
+            }
             else{
                 ESP_LOGI(TAG,"%s",processCmd((char*)data));
             }

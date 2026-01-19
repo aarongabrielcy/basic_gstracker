@@ -66,7 +66,7 @@ void sync_tracker_data(){
     getCellData();// ejecutar cada 28 segundos cambiar de lugar
     vTaskDelay(100);
     //if (network){
-        uartManager_sendCommand("AT+CIPSEND");
+    uartManager_sendCommand("AT+CIPSEND");
    /* }
     else{
         // buffer
@@ -97,7 +97,7 @@ void send_track_data(){
         case TRACKING_RPT:
             snprintf(message, sizeof(message), "STT;%s;3FFFFF;95;1.0.21;1;%s;%s;%d;%d;%s;11;%s;%s;%.2f;%.2f;%d;%d;%d%d00000%d;00000000;0;1;5676;4.1;11.94", nvs_data.device_id, date_time, cpsi.cell_id, cpsi.mcc, cpsi.mnc, cpsi.lac_tac, latitud, longitud, gnss.speed,gnss.course, gnss.gps_svs,gnss.fix, tkr.tkr_course, tkr.tkr_meters, tkr.ign);
             event = tkr.tkr_course || tkr.tkr_meters ? TRACKING_RPT : DEFAULT;
-
+            
         break;
         case IGNITION_ON:
             snprintf(message, sizeof(message), "ALT;%s;3FFFFF;95;1.0.21;1;%s;%s;%d;%d;%s;11;%s;%s;%.2f;%.2f;%d;%d;%d%d00000%d;00000000;%d;;",nvs_data.device_id, date_time,cpsi.cell_id, cpsi.mcc, cpsi.mnc, cpsi.lac_tac, latitud, longitud, gnss.speed, gnss.course,gnss.gps_svs, gnss.fix, tkr.tkr_course, tkr.tkr_meters, tkr.ign, 33);
@@ -119,7 +119,8 @@ void send_track_data(){
         break;
     }
     ESP_LOGI(TAG, "Event:%d, Message:%s", event, message);
-    send_ctrlZ(message);
+    sst26_guardar_mensaje(message);
+    //send_ctrlZ(message);
 }
 
 void system_event_handler(void *handler_arg, esp_event_base_t base, int32_t event_id, void *event_data) {
@@ -157,6 +158,9 @@ void system_event_handler(void *handler_arg, esp_event_base_t base, int32_t even
         case TRACKING_RPT:
             event = TRACKING_RPT;
             ESP_LOGI(TAG, "Generando TRACKING_RPT");
+            
+            // Testing
+            send_track_data();
             // Esto ya funciona
             // buscar el CONNECT OK PARA ACEPTAR TRACKEOS
             // AL llegar a este este evento debe mandar un primer trackeo antes de empezar a mandarlo con el timmer
