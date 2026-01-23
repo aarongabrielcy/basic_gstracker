@@ -20,12 +20,18 @@ typedef enum {
     DEFAULT
 } system_event_t;
 
+typedef enum {
+    TRACK_MODE_NORMAL = 0,
+    TRACK_MODE_CURVE  = 1
+} track_mode_t;
+
 esp_event_loop_handle_t init_event_loop(void);
 esp_event_loop_handle_t get_event_loop(void);
-
-#define TRACKING_REPORT_TIME 30000 //30000
-#define KEEPALIVE_REPORT_TIME 300000// 10s = 10000 / 5min = 300000 / 30min = 1800000 / 1min = 60000
-
+#define MS_PER_SEC   1000UL
+#define MS_PER_MIN   (60UL * MS_PER_SEC)
+#define TRACKING_REPORT_TIME (59UL * MS_PER_SEC) //30000
+#define KEEPALIVE_REPORT_TIME (30UL * MS_PER_MIN)// 10s = 10000 / 5min = 300000 / 30min = 1800000 / 1min = 60000
+#define TRACKING_REPORT_CURVE_TIME 3000U // 1 seg = 1000 / 3 seg = 3000
 /*void set_keep_alive_interval(uint32_t interval_ms);*/
 void start_keep_alive_timer(void);
 void stop_keep_alive_timer(void);
@@ -34,5 +40,6 @@ void start_tracking_report_timer(void);
 void stop_tracking_report_timer(void);
 void curve_tracking_timer();
 void normal_tracking_timer();
-
+void update_keep_alive_timer(uint32_t new_interval_ms);
+void update_tracking_report_timer(uint32_t new_interval_ms);
 #endif // EVENT_HANDLER_H

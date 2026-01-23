@@ -1,17 +1,17 @@
 #pragma once
 
 typedef enum {
-    KPRP = 11,
+    KLRT = 11,
     RTMS = 12,
     RTMC = 13,
     SVPT = 14,
-    TMTR = 15,
-    DITR = 16,
+    TKRT = 15, 
+    DTRM = 16,
     DLBF = 17,
-    MRST = 18,
+    MTRS = 18,
     OPCT = 19,
-    PDWF = 101,
-    AEWF = 102,
+    CWPW = 101,
+    EBWF = 102,
     AEGP = 103, //ACTIVE GPS
     FWUP = 104
   } cmd_action_t;
@@ -42,6 +42,9 @@ typedef enum {
     INVALID_QUERY_VALUE = 8,
     INVALID_END_SYMBOL = 9
 } type_command_t;
+
+#define NVS_KEY_KEEPALIVE "keepalive_t"
+#define NVS_KEY_TRACKING_REPORT "tracking_t"
 
 void uart_serial_init(void);
 void uartManager_sendCommand(const char *command);

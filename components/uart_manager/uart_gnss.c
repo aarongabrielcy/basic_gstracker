@@ -8,12 +8,11 @@
 #include "gnss_nmea.h"
 #include "string.h"
 #include "eventHandler.h"
+#include "tracker_model.h"
 #define EPSILON 0.0001
 
 static const char *TAG = "UART_MANAGER_GNSS";
 bool noChangeReported = true;
-bool change_curve = false;
-bool change_normal = false;
 
 #define BUF_SIZE_OTA 1024
 int uartGnss_readEvent(char *buffer, int max_length, int timeout_ms);
@@ -73,24 +72,16 @@ static void gnss_task_init(void *arg) {
                 line = strtok_r(NULL, "\r\n", &saveptr);
             }
             if (gnss.fix > 0) {
-                if(checkSignificantCourseChange(gnss.course)){
-                    if(!change_curve){
-                        ESP_LOGI(TAG, " Envío en curva");
-                        curve_tracking_timer();
-                        change_curve = true;
-                        change_normal = false;
-                    }
-                    // CAmbiar reporte a 3 segundos
+                if(checkSignificantCourseChange(gnss.course) && tkr.ign){
+                    ESP_LOGI(TAG, " Envío en curva ===============>");
+                    curve_tracking_timer();
+                    noChangeReported = false;
                     
                 }
                 else if(!noChangeReported){
-                    // Cambiar reporte a 30
-                    if(!change_normal){
-                        ESP_LOGI(TAG, " cambiando a reporte normal");
-                        normal_tracking_timer();
-                        change_curve = false;
-                        change_normal = true;
-                    }
+                    ESP_LOGI(TAG, " cambiando a reporte normal ~~~~~~~~~~~~~~~~>");
+                    normal_tracking_timer();
+                    noChangeReported = true;
                 }
             } else {
                 //ESP_LOGI(TAG, "Esperando señal GPS...");
@@ -101,7 +92,6 @@ static void gnss_task_init(void *arg) {
         }
     }
 }
-
 
 int uartGnss_readEvent(char *buffer, int max_length, int timeout_ms) {
     int len = uart_read_bytes(UART_NUM_2, (uint8_t *)buffer, max_length - 1, pdMS_TO_TICKS(timeout_ms));

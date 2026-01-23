@@ -5,3 +5,4 @@ void reconnect_network();
 void send_track_data(void);
 void setTimeUTC(const char *time);
 void set_net_connectivity(uint8_t signal);
+void sync_tracker_data(void);

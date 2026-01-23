@@ -9,6 +9,7 @@
 #include "io_manager.h"
 #include "nvs_manager.h"
 #include <ctype.h>
+#include "nvsData.h"
 
 #include "eventHandler.h"
 #include "esp_event.h"
@@ -32,6 +33,14 @@ typedef struct {
 
 } ParsedCommand;
 
+char id[20];
+char ccid[25];
+char pss_wf[10];
+
+char location[100];
+char lat[20] = "+0.000000";
+char lon[20] = "+0.000000";
+
 TaskHandle_t monitor_uart_task = NULL;
 
 void serial_task_init(void);
@@ -47,7 +56,7 @@ static char *processSVPT(const char *data);
 static char *proccessCLOP(const char *data);
 static char * resetDevice(const char *value);
 static char * validatePassword(const char *password);
-static char * updateFirmware(const char * value);
+static char * firmwareUpdate(const char * value);
 char *processCmd(const char *command);
 
 void uart_serial_init(){
@@ -254,11 +263,57 @@ static int validateCommand(const char *input, ParsedCommand *parsed) {
 
 char *proccessAction(ParsedCommand *parsed) {
     switch (parsed->number) {
+        case KLRT:
+            uint32_t minutes = strtoul(parsed->value, NULL, 10);
+            if (minutes < 5) {
+                ESP_LOGI(TAG, "Valor KLRT inválido (min < 5): %s", parsed->value);
+                return "NA";
+            }
+            if (minutes >= 60)  {
+                ESP_LOGI(TAG, "Valor KLRT inválido (no puede ser mayor a 1 hora): %s", parsed->value);
+                return "NA";
+            }
+            uint32_t interval_ms = minutes * 60UL * 1000UL;
+            esp_err_t err = nvs_save_int(NVS_KEY_KEEPALIVE, interval_ms);
+            if (err != ESP_OK) {
+                ESP_LOGE(TAG, "Error NVS KLRT: %s", esp_err_to_name(err));
+                return "ERR SAVE";
+            }
+            /* ===============================
+             * ACTUALIZACIÓN EN RUNTIME
+             * =============================== */
+            nvs_data.keep_alive_time = interval_ms;
+            update_keep_alive_timer(interval_ms);
+            ESP_LOGI(TAG, "keep alive actualizado a %lu minutos", minutes);
+            return "OK";           
+        case TKRT:
+            uint32_t seconds = strtoul(parsed->value, NULL, 10);
+            if (seconds < 10) {
+                ESP_LOGI(TAG, "Valor TKRT inválido (seg < 10): %s", parsed->value);
+                return "NA";
+            }
+            if (seconds > 60)  {
+                ESP_LOGI(TAG, "Valor TKRT inválido (no puede ser mayor a 1 minuto): %s", parsed->value);
+                return "NA";
+            }
+            uint32_t interval_tkr_ms = seconds * 1000UL;
+            esp_err_t err_tkr = nvs_save_int(NVS_KEY_TRACKING_REPORT, interval_tkr_ms);
+            if (err_tkr != ESP_OK) {
+                ESP_LOGE(TAG, "Error NVS TKRT: %s", esp_err_to_name(err_tkr));
+                return "ERR SAVE";
+            }
+            /* ===============================
+             * ACTUALIZACIÓN EN RUNTIME
+             * =============================== */
+            nvs_data.tracking_time = interval_tkr_ms;
+            update_tracking_report_timer(interval_tkr_ms);
+            ESP_LOGI(TAG, "tracking report actualizado a %lu segundos", seconds);
+            return "OK";
         case SVPT:
             return processSVPT(parsed->value);
         case CLOP:
             return proccessCLOP(parsed->value);
-        case MRST:
+        case MTRS:
             return resetDevice(parsed->value);
         case OPCT:
         if(atoi(parsed->value) == 1 ) {
@@ -279,7 +334,7 @@ char *proccessAction(ParsedCommand *parsed) {
                     return "NOT DELETED";
                 }
             } else {return "NOT FOUND";} */
-        case PDWF:
+        case CWPW:
             char * response = validatePassword(parsed->value);
             if (strncmp(response, "save", 4) == 0) {
                 nvs_save_str("password_wifi", parsed->value);
@@ -288,6 +343,7 @@ char *proccessAction(ParsedCommand *parsed) {
                 return response;
             }
             return response;
+
         /*case AEWF:
             if(atoi(parsed->value) == 1 ) {
                 if (nvs_read_str("password_wifi", pss_wf, sizeof(pss_wf)) != NULL) {
@@ -333,7 +389,7 @@ char *proccessAction(ParsedCommand *parsed) {
             } else { return "ERR: The reporting time cannot be less than 10 seconds."; }
             return "OK";*/
         case FWUP:
-            return updateFirmware(parsed->value);
+            return firmwareUpdate(parsed->value);
         default:
             return "CMD ACTION NOT FOUND";
     }
@@ -342,22 +398,34 @@ char *proccessAction(ParsedCommand *parsed) {
 char *proccessQuery(ParsedCommand *parsed) {
     static char buffer[32];
     switch (parsed->number) {
-        /*case DVID:
+        case KLRT:
+            uint32_t keep_alive_ms = nvs_read_int(NVS_KEY_KEEPALIVE);
+            nvs_data.keep_alive_time = keep_alive_ms;
+            uint32_t keep_alive_min = keep_alive_ms / 1000 / 60;
+             snprintf(buffer, sizeof(buffer), "%lu", (unsigned long)keep_alive_min);
+             return buffer;
+        case TKRT:
+            uint32_t tracking_report_ms = nvs_read_int(NVS_KEY_TRACKING_REPORT);
+            nvs_data.tracking_time = tracking_report_ms;
+            uint32_t tracking_report_sec = tracking_report_ms / 1000;
+             snprintf(buffer, sizeof(buffer), "%lu", (unsigned long)tracking_report_sec);
+             return buffer;
+        case DVID:
             if (nvs_read_str("device_id", id, sizeof(id)) != NULL) {
                 return id;
-            }else { return "ERR"; }*/
+            }else { return "ERR"; }
         case RTCT:
             int value = nvs_read_int("dev_reboots");
             snprintf(buffer, sizeof(buffer), "%d", value);  // convierte el int a string
             return buffer;
-        /*case SIID:
+        case SIID:
             if (nvs_read_str("sim_id", ccid, sizeof(ccid)) != NULL) {
                 return ccid;
             }else { return "ERR"; }
         case PWFR:
             if (nvs_read_str("password_wifi", pss_wf, sizeof(pss_wf)) != NULL) {
                 return pss_wf;
-            }else { return "ERR"; }*/
+            }else { return "ERR"; }
         case TKRP: 
             esp_event_loop_handle_t loop = get_event_loop();            
             if (loop) {
@@ -370,7 +438,7 @@ char *proccessQuery(ParsedCommand *parsed) {
             } else {
                 return "ERR";  // El event loop no está disponible
             }
-        /*case LOCA:
+        case LOCA:
             if(nvs_read_str("last_valid_lon", lon, sizeof(lon)) != NULL) {
                 ESP_LOGI(TAG, "last_lat_NVS=%s", lon);   
             } else { return "ERR LON"; }
@@ -378,7 +446,7 @@ char *proccessQuery(ParsedCommand *parsed) {
                 ESP_LOGI(TAG, "last_lat_NVS=%s", lat);   
             } else { return "ERR LAT"; }
             snprintf(location, sizeof(location), "https://www.google.com/maps/search/?api=1&query=%s,%s&zoom=20", lat, lon);
-        return location;*/
+        return location;
         default:
             return "NOT FOUND";
     }
@@ -442,8 +510,7 @@ static char * resetDevice(const char *value) {
     else { return "ERR"; }
 }
 
-static char* validatePassword(const char *password) 
-    {
+static char* validatePassword(const char *password) {
     if (strlen(password) < 8) {
         return "Error: Password must be at least 8 characters long";
     }
@@ -470,7 +537,7 @@ static char* validatePassword(const char *password)
     //linkzero234.
 }
 
-static char* updateFirmware(const char *value) {
+static char* firmwareUpdate(const char *value) {
     //uart_flush(UART_NUM_1);
     //sim7600_sendATCommand("AT+CGNSSINFO=0");
     //vTaskDelay(200/portTICK_PERIOD_MS);

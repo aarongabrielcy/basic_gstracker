@@ -37,6 +37,8 @@ void sim7000_basic_config() {
     vTaskDelay(200);
     sim7000_command("AT+CIFSR");
     vTaskDelay(200);
+    getCellData();
+    vTaskDelay(200);
     sim7000_command("AT+CIPSTART=\"TCP\",\"201.122.135.23\",6100");
     vTaskDelay(200);
     
@@ -71,10 +73,23 @@ uint8_t request_cpin(){
 }
 uint8_t request_cipstatus(){
     sim7000_command("AT+CIPSTATUS");
+    vTaskDelay(200);
     return 1;
 }
 uint8_t request_cipstop(){
     sim7000_command("AT+CIPCLOSE");
+    vTaskDelay(200);
+    return 1;
+}
+
+uint8_t disable_gprs(){
+    sim7000_command("AT+CIPSHUT"); //disable gprs PDP Context
+    vTaskDelay(200);
+    return 1;
+}
+uint8_t disable_gps(){
+    sim7000_command("AT+CGNSPWR=0"); //disable gprs PDP Context
+    vTaskDelay(200);
     return 1;
 }
 void sim7000_connection_with_server(){
@@ -89,6 +104,7 @@ void sim7000_connection_with_server(){
     sim7000_command("AT+CIPSTART='TCP','10.64.6.9',5205");
     //sim7000_command("AT+CIPSTART='TCP','201.122.135.23',6100");
     vTaskDelay(200);
+
     sim7000_conn_stop();
 }
 

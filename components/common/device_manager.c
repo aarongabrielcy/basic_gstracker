@@ -51,7 +51,7 @@ static void assign_nvs_data(void) {
             ESP_LOGI(TAG, "solicitando ccid");       
         }
     }
-    /*
+    
     /// valida NVS antes de inicializar si ya está guardadas en NVS retorna
     if(nvs_read_str("wifi_mac_ap", nvs_data.wifi_ap, sizeof(nvs_data.wifi_ap)) != NULL){
         ESP_LOGI(TAG, "WIFI MAC=%s", nvs_data.wifi_ap);   
@@ -92,7 +92,13 @@ static void assign_nvs_data(void) {
              raw_sta[3], raw_sta[4], raw_sta[5]);
             nvs_save_str("wifi_mac_sta", nvs_data.wifi_station);
 
-    }*/
+    }
+    if(nvs_read_str("last_valid_lat", nvs_data.last_latitud, sizeof(nvs_data.last_latitud)) != NULL){
+        ESP_LOGI(TAG, "LATITUDE=%s", nvs_data.last_latitud);   
+    }
+    if(nvs_read_str("last_valid_lon", nvs_data.last_longitud, sizeof(nvs_data.last_longitud)) != NULL){
+        ESP_LOGI(TAG, "LONGITUDE=%s", nvs_data.last_longitud);   
+    }
 }
 
 static void increment_reboot_counter(void) {
@@ -114,17 +120,18 @@ static void increment_reboot_counter(void) {
     }
 }
 
-void check_imei_match(const char *current_imei){
+void check_imei_match(const char *current_imei) {
     ESP_LOGI(TAG, "GUARDADO DE IMEI Y DEV_ID:%s", current_imei);
     nvs_save_str("dev_simei", current_imei);
     nvs_save_str("device_id", formatDevID(current_imei));
 }
 
-void check_ccid_match(const char *current_ccid){
+void check_ccid_match(const char *current_ccid) {
+    //AGREGAR VALIACION DE SIM ICCID LONGITUD 19 O 20 CARACTERES
     ESP_LOGI(TAG,"CHECANDO:%s",nvs_data.sim_iccid );
     if (strcmp(nvs_data.sim_iccid, current_ccid) == 0){
         ESP_LOGI(TAG, "CCID ACTUAL:%s", current_ccid);
-    }else{
+    } else {
         ESP_LOGI(TAG, "NUEVO CCID:%s", current_ccid);
         nvs_save_str("sim_id", current_ccid);
     }

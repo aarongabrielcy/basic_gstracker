@@ -68,7 +68,7 @@ raw data cellNet bool
 # ACTION
 | CMD          | CODE  | DESCRIPTION                 | <DEVID>,<CMD><SYMB><VALUE><ENDSYM>     |
 |--------------|-------|-----------------------------|----------------------------------------|
-| KLRP         | 11    | Keep a live report          | {DEVID},11#{min}$ (minino cada 10 min) |
+| KLRT         | 11    | Keep a live report time     | {DEVID},11#{min}$ (minino cada 10 min) |
 | RTMS         | 12    | Reset SIM module            | {DEVID},12#1$                          |
 | RTMC         | 13    | Reset microcontroller       | {DEVID},13#1$                          |
 | SVPT         | 14    | Server and port             | {DEVID},14#{ip:port}$                  |
@@ -78,15 +78,19 @@ raw data cellNet bool
 # QUERY
 | CMD          | CODE  | DESCRIPTION                 | <DEVID>,<CMD><SYMB><ENDSYM>            |
 |--------------|-------|-----------------------------|----------------------------------------|
+| KLRP         | 11    | Keep a live report time     | {DEVID},11?$                           |
 | RTCT         | 26    | Number of device restarts   | {DEVID},26?$                           |
 
 ## Nomenclaturas usadas en comandos
-- `KLRP` → Keep a live timer report
+- `KLRT` → Keep a live report time
+- `KLRP` → Keep a live report
 - `RTMC` → Reset microcontroler
 - `RTMS` → Reset modulo SIM
 - `SVPT` → servidor y puerto TCP
-- `TMTR` → Timer tracking report
-- `DITR` → Distance tracking report
+- `TKRT` → tracking report time
+- `TKRP` → tracking report
+- `DTRM` → Distance tracking report meters
+- `DTRP` → Distance tracking report
 - `DRNV` → Delete read NVS
 - `CLOP` → operador celular
 - `DLBF` → Borrar block flash ext. por indice
@@ -100,17 +104,23 @@ raw data cellNet bool
 - `GNSR` → GNSS report
 - `OPCT` → Output control
 - `OPST` → Output state
-- `MRST` → Reinicio del dispositivo completo (MASTER RESET)
+- `MTRS` → Reinicio del dispositivo completo (MASTER RESET)
 - `LOCA` → última posición valida (LOCATION)
+- `CWPW` → Crear contraseña WIFI (create wifi password)
+- `EBWF` → Habilitar WIFI (Enable wifi)
+- `EBGS` → Habilitar GPS (Enable GPS)
+- `EBGR` → Habilitar GPRS (Enable GPRS)
+- `FWUD` → Habilitar GPRS (Enable GPRS)
 
 # Datos guardados en NVS memoria no volatil
 - `dev_imei` → imei del modulo SIM → AT command
 - `dev_id` → id del dispositivo → AT command
 - `sim_id` → operador celular (validar al reiniciar) → AT command
-- `Keep_a_live` → tiempo de reporte de latido → UART/http/TCP/SMS
-- `time_report_tkg` → tiempo de reporte de trackeo → timer
-- `dev_password` → contraseña para ingresar a modificar parametros
-- `life_time` → tiempo de vida encendido el dispositivo
+- `Keep_a_live_time` → tiempo de reporte de latido → UART/http/TCP/SMS (minutos)
+- `tracking_time` → tiempo de reporte de trackeo → timer (segundos)
+- `tracking_curve_time` → tiempo de reporte en curva (segundos)
+- `dev_password` → contraseña para ingresar a modificar parametros (ASCII)
+- `life_time` → tiempo de vida encendido el dispositivo 
 - `dev_reboots` → Reinicios del dispositivo
 - `last_evt_gen` → ultimo evento generado
 - `trackings_sent` → numero de mensajes enviados desde encendido
