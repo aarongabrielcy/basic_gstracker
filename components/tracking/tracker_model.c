@@ -11,5 +11,7 @@ trackerData_t tkr = {
     .stt_rpt_type = 0,
     .msg_num = 0,
     .bck_volt = 0.00,
-    .power_volt = 0.00
+    .power_volt = 0.00,
+    .network_status = 0,
+    .tcp_connected = 0,
 };

@@ -5,6 +5,8 @@
 #include "esp_log.h"
 #include "tracking.h"
 
+static track_mode_t tracking_mode = TRACK_MODE_NORMAL;
+
 ESP_EVENT_DEFINE_BASE(SYSTEM_EVENTS);
 
 static esp_event_loop_handle_t event_loop_handle = NULL;
@@ -64,8 +66,7 @@ esp_event_loop_handle_t get_event_loop(){
         if (err != ESP_OK) {
             ESP_LOGE("EVENT_HANDLER", "Error creando event loop: %s", esp_err_to_name(err));
             return NULL;
-        }
-        
+        }    
         //initialized = true;
     }   
     return event_loop_handle;
@@ -127,11 +128,13 @@ void stop_keep_alive_timer(void) {
 }
 
 void curve_tracking_timer(){
+    if (tracking_mode == TRACK_MODE_CURVE) return; 
     esp_timer_stop(tracking_report_timer);
-    esp_timer_start_periodic(tracking_report_timer, 3000000);
+    esp_timer_start_periodic(tracking_report_timer, 1000000);
 }
 
 void normal_tracking_timer(){
+    if (tracking_mode == TRACK_MODE_NORMAL) return;
     esp_timer_stop(tracking_report_timer);
     esp_timer_start_periodic(tracking_report_timer, tracking_report_interval* 1000);
 }

@@ -64,7 +64,16 @@ uint8_t request_ccid(){
     sim7000_command("AT+CCID");
     return 1;
 }
-
+uint8_t request_cipstatus(){
+    sim7000_command("AT+CIPSTATUS");
+    vTaskDelay(200);
+    return 1;
+}
+uint8_t request_cipstop(){
+    sim7000_command("AT+CIPCLOSE");
+    vTaskDelay(200);
+    return 1;
+}
 void sim7000_connection_with_server(){
     sim7000_command("AT+CSTT='internet.itelcel.com'");
     vTaskDelay(200);

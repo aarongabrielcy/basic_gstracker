@@ -20,6 +20,11 @@ typedef enum {
     DEFAULT
 } system_event_t;
 
+typedef enum {
+    TRACK_MODE_NORMAL = 0,
+    TRACK_MODE_CURVE  = 1
+} track_mode_t;
+
 esp_event_loop_handle_t init_event_loop(void);
 esp_event_loop_handle_t get_event_loop(void);
 

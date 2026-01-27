@@ -9,6 +9,8 @@ typedef struct {
     char blue_addr[18];
     int rst_count;
     char pss_wifi[10];
+    char last_latitud[20];
+    char last_longitud[20];
 } NvsData;
 
 extern NvsData nvs_data;

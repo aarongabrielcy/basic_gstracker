@@ -15,6 +15,8 @@
 #include "utilities.h"
 #include <stdint.h>
 #include "buffer.h"
+#include "nvs_manager.h"
+
 #define TAG "TRACKING PROCESSOR"
 
 char date_time[34];
@@ -58,9 +60,31 @@ void set_net_connectivity(uint8_t signal){
 
 void sync_tracker_data(){
     if(gnss.fix == 0){
-            getTimeLocal();
+        getTimeLocal();
+        ESP_LOGI(TAG, "No hay FIX GNSS, usando ultima fecha y hora valida: %s", date_time);
+        if (nvs_data.last_latitud[0] != '\0' && nvs_data.last_longitud[0] != '\0') {
+            printf("ya hay coordenas: %s, %s\n", nvs_data.last_latitud, nvs_data.last_longitud);
+            strcpy(latitud, nvs_data.last_latitud);
+            strcpy(longitud, nvs_data.last_longitud);
+        }else if(nvs_read_str("last_valid_lat", latitud, sizeof(latitud)) != NULL 
+            && nvs_read_str("last_valid_lon", longitud, sizeof(longitud)) != NULL) {
+            ESP_LOGI(TAG, "last_coordinates_NVS=%s,%s", latitud, longitud);   
+        }else {
+            ESP_LOGI(TAG, "No hay coordenadas validas GNSS: %s, %s", latitud, longitud);
+        } 
     }else {
-     snprintf(date_time, sizeof(date_time), "%s;%s", formatDate(gnss.date), formatTime(gnss.utctime));   
+        strcpy(latitud, formatCoordinates(gnss.lat, gnss.ns));
+        strcpy(longitud, formatCoordinates(gnss.lon, gnss.ew));
+
+         strcpy(nvs_data.last_latitud, latitud);
+         strcpy(nvs_data.last_longitud, longitud);
+         if(gnss.speed > 10.0){
+            nvs_save_str("last_valid_lat", nvs_data.last_latitud);
+            nvs_save_str("last_valid_lon", nvs_data.last_longitud);
+            ESP_LOGI(TAG, "Saving last coordinates to NVS: %s, %s", nvs_data.last_latitud, nvs_data.last_longitud);
+        }
+        snprintf(date_time, sizeof(date_time), "%s;%s", formatDate(gnss.date), formatTime(gnss.utctime));
+        ESP_LOGI(TAG, "Using UTC Satellite datetime: %s", date_time);   
     }
     vTaskDelay(100);
     getCellData();// ejecutar cada 28 segundos cambiar de lugar
@@ -72,13 +96,16 @@ void sync_tracker_data(){
         // buffer
     }*/
 }
+void reconnect_pdp() {
+    uartManager_sendCommand("AT+CIPSHUT");
+}
 void reconnect_network(){
     /*uartManager_sendCommand("AT+CIICR");
     vTaskDelay(2000);
     uartManager_sendCommand("AT+CIFSR");
     vTaskDelay(2000);*/
     uartManager_sendCommand("AT+CIPSTART=\"TCP\",\"201.122.135.23\",6100");
-    vTaskDelay(2000);
+    vTaskDelay(1000);
     //uartManager_sendCommand("AT+CIPSEND");
 }
 static void send_ctrlZ(const char *message){
@@ -88,11 +115,7 @@ static void send_ctrlZ(const char *message){
 }
 
 void send_track_data(){
-
     char message[256];
-    strcpy(latitud, formatCoordinates(gnss.lat, gnss.ns));
-    strcpy(longitud, formatCoordinates(gnss.lon, gnss.ew));
-
     switch (event) {       
         case TRACKING_RPT:
             snprintf(message, sizeof(message), "STT;%s;3FFFFF;95;1.0.21;1;%s;%s;%d;%d;%s;11;%s;%s;%.2f;%.2f;%d;%d;%d%d00000%d;00000000;0;1;5676;4.1;11.94", nvs_data.device_id, date_time, cpsi.cell_id, cpsi.mcc, cpsi.mnc, cpsi.lac_tac, latitud, longitud, gnss.speed,gnss.course, gnss.gps_svs,gnss.fix, tkr.tkr_course, tkr.tkr_meters, tkr.ign);
@@ -130,7 +153,7 @@ void system_event_handler(void *handler_arg, esp_event_base_t base, int32_t even
             event = IGNITION_ON;
             start_tracking_report_timer();
             stop_keep_alive_timer();
-            sync_tracker_data(event);
+            sync_tracker_data();
             break;
         case IGNITION_OFF:
             ESP_LOGI(TAG, "Ignition=> APAGADA, generando Keep alives"); 
@@ -149,10 +172,10 @@ void system_event_handler(void *handler_arg, esp_event_base_t base, int32_t even
             sync_tracker_data();
             break;
         case KEEP_ALIVE:
+              request_cipstop();
             event = KEEP_ALIVE;
             ESP_LOGI(TAG, "Evento KEEP_ALIVE: han pasado %d minutos", keep_alive_interval / 60000);
             sync_tracker_data();
-
             break;
         case TRACKING_RPT:
             event = TRACKING_RPT;
@@ -162,10 +185,10 @@ void system_event_handler(void *handler_arg, esp_event_base_t base, int32_t even
             // AL llegar a este este evento debe mandar un primer trackeo antes de empezar a mandarlo con el timmer
             sync_tracker_data();
         break;
-        case DEFAULT:
+        /*case DEFAULT:
             stop_tracking_report_timer();
-            stop_keep_alive_timer();            
-        break;
+            stop_keep_alive_timer();         
+        break;*/
     }
 }
 

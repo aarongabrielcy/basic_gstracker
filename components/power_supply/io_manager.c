@@ -74,7 +74,13 @@ uint8_t getInValue(){
 }
 
 uint8_t getIGNValue(){
-    return gpio_get_level(IGNITION_PIN);
+    if (gpio_get_level(IGNITION_PIN)) {
+        esp_event_post_to(get_event_loop(), SYSTEM_EVENTS, IGNITION_OFF, NULL, 0, portMAX_DELAY);
+        return 0;
+    }else {
+        esp_event_post_to(get_event_loop(), SYSTEM_EVENTS, IGNITION_ON, NULL, 0, portMAX_DELAY);
+        return 1;
+    }
 }
 
 void configure_gpio_ou(void)

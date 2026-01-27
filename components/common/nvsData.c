@@ -8,5 +8,7 @@ NvsData nvs_data = {
     .wifi_ap = "AA:BB:CC:DD:EE:FF",
     .blue_addr = "AA:BB:CC:DD:EE:FF",
     .rst_count = 0,
-    .pss_wifi = "MyPass"
+    .pss_wifi = "MyPass",
+    .last_latitud = "",
+    .last_longitud = "",
 };

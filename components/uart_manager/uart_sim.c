@@ -78,20 +78,32 @@ static void uart_sim_task(void *pvParameters){
                 //sim7000_init();
                 //RETUR BOOL
             }
+            else if (strstr(response, "CONNECT OK") != NULL) {
+                ESP_LOGI(TAG, "CONNECTED TCP:%s", response);
+                sync_tracker_data();
+            }
             else if (strstr(response, "SEND OK") != NULL){
                 ESP_LOGI(TAG, "RESP SUCCESSFULLY CIPSEND:%s", response);
             }
             else if (strstr(response, "SEND FAIL") != NULL){
                 ESP_LOGI(TAG, "SEND FAIL CIPSEND:%s", response);
-                reconnect_network();
+                request_cipstatus();
             }
             else if (strstr(response, "ERROR") != NULL){
                 ESP_LOGI(TAG, "ERROR CIPSEND CONN:%s", response);
-                reconnect_network();
+                request_cipstatus();
             }
             else if (strstr(response, "CLOSED") != NULL){
                 ESP_LOGI(TAG, "CLOSED FAIL CIPSEND:%s", response);
                 reconnect_network();
+            }
+            else if (strstr(response, "SHUT OK") != NULL){
+                ESP_LOGI(TAG, "PDP CONTEXT CLOSE:%s", response);
+                reconnect_network();
+            }
+            else if (strstr(response, "PDP DEACT") != NULL){
+                ESP_LOGI(TAG, "PDP DEACT CIP STATUS:%s", response);
+                reconnect_pdp();
             }
             else if (strstr(response, "+CLTS:") != NULL){
                 int data = -1;
@@ -169,8 +181,6 @@ int uartManager_readEvent(char *buffer, int max_length, int timeout_ms) {
     }
     return len;
 }
-
-
 void uart_task_init(){
     xTaskCreate(uart_sim_task, "uart_main", 4096, NULL, 10, &main_uart_task);
 }
